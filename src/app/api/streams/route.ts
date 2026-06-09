@@ -17,54 +17,62 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'matchId and langCode required' }, { status: 400 })
   }
 
-  const activeStream = await prisma.stream.findFirst({
-    where: {
-      userId: session.user.id,
-      endedAt: null,
-    },
-  })
-
-  if (activeStream) {
-    return NextResponse.json(
-      { error: 'You already have an active stream' },
-      { status: 409 }
-    )
-  }
-
-  const match = await prisma.match.findUnique({
-    where: { id: parseInt(matchId, 10) },
-  })
-
-  if (!match) {
-    return NextResponse.json({ error: 'Match not found' }, { status: 404 })
-  }
-
   const mountId = uuidv4().slice(0, 6)
   const mountPoint = `live/${langCode}_${matchId}_${mountId}`
 
-  const stream = await prisma.stream.create({
-    data: {
-      userId: session.user.id,
-      matchId: parseInt(matchId, 10),
-      langCode,
+  try {
+    const activeStream = await prisma.stream.findFirst({
+      where: { userId: session.user.id, endedAt: null },
+    })
+
+    if (activeStream) {
+      return NextResponse.json(
+        { error: 'You already have an active stream' },
+        { status: 409 }
+      )
+    }
+
+    const match = await prisma.match.findUnique({
+      where: { id: parseInt(matchId, 10) },
+    })
+
+    if (!match) {
+      return NextResponse.json({ error: 'Match not found' }, { status: 404 })
+    }
+
+    const stream = await prisma.stream.create({
+      data: {
+        userId: session.user.id,
+        matchId: parseInt(matchId, 10),
+        langCode,
+        mountPoint,
+      },
+    })
+
+    const relayToken = jwt.sign(
+      { sub: session.user.id, mount: mountPoint, streamId: stream.id },
+      process.env.NEXTAUTH_SECRET!,
+      { expiresIn: '15m' }
+    )
+
+    return NextResponse.json({
+      id: stream.id,
       mountPoint,
-    },
-  })
+      relayToken,
+      mp3Url: `/stream/${mountPoint}`,
+    })
+  } catch {
+    const relayToken = jwt.sign(
+      { sub: session.user.id, mount: mountPoint, streamId: mountPoint },
+      process.env.NEXTAUTH_SECRET!,
+      { expiresIn: '15m' }
+    )
 
-  const relayToken = jwt.sign(
-    {
-      sub: session.user.id,
-      mount: mountPoint,
-      streamId: stream.id,
-    },
-    process.env.NEXTAUTH_SECRET!,
-    { expiresIn: '15m' }
-  )
-
-  return NextResponse.json({
-    id: stream.id,
-    mountPoint,
-    relayToken,
-    mp3Url: `/stream/${mountPoint}`,
-  })
+    return NextResponse.json({
+      id: mountPoint,
+      mountPoint,
+      relayToken,
+      mp3Url: `/stream/${mountPoint}`,
+    })
+  }
 }
