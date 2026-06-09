@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Match not found' }, { status: 404 })
   }
 
-  const mountId = uuidv4().slice(0, 8)
-  const mountPoint = `${langCode}-${matchId}-${mountId}`
+  const mountId = uuidv4().slice(0, 6)
+  const mountPoint = `live/${langCode}_${matchId}_${mountId}`
 
   const stream = await prisma.stream.create({
     data: {
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
     id: stream.id,
     mountPoint,
     relayToken,
-    hlsUrl: `/stream/${mountPoint}/index.m3u8`,
     mp3Url: `/stream/${mountPoint}`,
   })
 }

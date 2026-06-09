@@ -37,3 +37,4 @@ next-env.d.ts
 # temp
 /temp-output.txt
 *.tmp
+dev-server*.log

@@ -39,12 +39,12 @@ wss.on('connection', (ws, req) => {
 
   const ffmpeg = spawn('ffmpeg', [
     '-i', 'pipe:0',
-    '-f', 's16le',
-    '-acodec', 'pcm_s16le',
-    '-ar', '44100',
+    '-acodec', 'libmp3lame',
+    '-ab', '64k',
     '-ac', '1',
+    '-ar', '44100',
     '-f', 'mp3',
-    '-ab', '128k',
+    '-content_type', 'audio/mpeg',
     'icecast://source:' + ICECAST_SOURCE_PASSWORD + '@' + ICECAST_HOST + ':' + ICECAST_PORT + '/' + mount,
   ]);
 
