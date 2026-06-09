@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+  streams   Stream[]
+  votes     Vote[]
+}
+
+model Match {
+  id         Int      @id
+  home       String
+  away       String
+  group      String
+  stage      String
+  kickoffUtc DateTime
+  status     String   @default("NS")
+  scoreHome  Int?
+  scoreAway  Int?
+  minute     String?
+  venue      String?
+  city       String?
+  streams    Stream[]
+}
+
+model Stream {
+  id         String   @id @default(cuid())
+  userId     String
+  matchId    Int
+  langCode   String
+  mountPoint String   @unique
+  startedAt  DateTime @default(now())
+  endedAt    DateTime?
+  listeners  Int      @default(0)
+  score      Int      @default(0)
+  user       User     @relation(fields: [userId], references: [id])
+  match      Match    @relation(fields: [matchId], references: [id])
+  votes      Vote[]
+
+  @@index([matchId, langCode])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  streamId  String
+  value     Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  stream    Stream   @relation(fields: [streamId], references: [id])
+
+  @@unique([userId, streamId])
+}

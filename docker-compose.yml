@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ertemol:${DB_PASS}@db:5432/ertemol
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: https://ertemol.com
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
+      API_FOOTBALL_KEY: ${API_FOOTBALL_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      icecast:
+        condition: service_started
+
+  relay:
+    build: ./relay
+    restart: unless-stopped
+    environment:
+      ICECAST_HOST: icecast
+      ICECAST_PORT: 8000
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
+      RELAY_JWT_SECRET: ${NEXTAUTH_SECRET}
+    depends_on:
+      - icecast
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ertemol
+      POSTGRES_USER: ertemol
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ertemol"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  icecast:
+    image: moul/icecast
+    restart: unless-stopped
+    environment:
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
+      ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD}
+      ICECAST_HOSTNAME: ertemol.com
+      ICECAST_MAX_CLIENTS: 500
+      ICECAST_MAX_SOURCES: 50
+    volumes:
+      - icecast-logs:/var/log/icecast2
+
+volumes:
+  postgres-data:
+  icecast-logs:
