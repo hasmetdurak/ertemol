@@ -34,6 +34,12 @@ export async function GET(
           id: true,
           name: true,
           image: true,
+          displayName: true,
+          bio: true,
+          contactEmail: true,
+          instagram: true,
+          twitter: true,
+          website: true,
         },
       },
       _count: {

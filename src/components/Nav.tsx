@@ -15,6 +15,12 @@ export function Nav() {
         <div className="flex items-center gap-3">
           {session?.user ? (
             <>
+              <Link
+                href="/settings"
+                className="text-sm text-muted hover:text-fg transition-colors"
+              >
+                Settings
+              </Link>
               <span className="text-sm text-muted hidden sm:block">
                 {session.user.name}
               </span>

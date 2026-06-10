@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { DelayedAudioPlayer } from './DelayedAudioPlayer'
 
 interface Speaker {
   id: string
@@ -12,8 +13,14 @@ interface Speaker {
   score: number
   user: {
     id: string
-    name: string
+    name: string | null
     image: string | null
+    displayName: string | null
+    bio: string | null
+    contactEmail: string | null
+    instagram: string | null
+    twitter: string | null
+    website: string | null
   }
   voteCount: number
 }
@@ -23,8 +30,8 @@ interface SpeakerPanelProps {
   langCode: string
 }
 
-function generateM3U(name: string, url: string): string {
-  return `#EXTM3U\n#EXTINF:-1,Ertemol - ${name}\n${url}`
+function generateM3U(name: string | null, url: string): string {
+  return `#EXTM3U\n#EXTINF:-1,Ertemol - ${name || 'Commentator'}\n${url}`
 }
 
 export function SpeakerPanel({ matchId, langCode }: SpeakerPanelProps) {
@@ -100,8 +107,9 @@ export function SpeakerPanel({ matchId, langCode }: SpeakerPanelProps) {
     <div className="space-y-3">
       {speakers.map((speaker) => {
         const streamUrl = `${window.location.origin}/stream/${speaker.mountPoint}`
-        const initials = speaker.user.name
-          ? speaker.user.name
+        const displayName = speaker.user.displayName || speaker.user.name
+        const initials = displayName
+          ? displayName
               .split(' ')
               .map((n) => n[0])
               .join('')
@@ -129,7 +137,12 @@ export function SpeakerPanel({ matchId, langCode }: SpeakerPanelProps) {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-fg">
-                    {speaker.user.name}
+                    <a href={`/u/${speaker.user.id}`} className="hover:underline">
+                      {speaker.user.displayName || speaker.user.name || 'Anonymous'}
+                    </a>
+                    {speaker.user.displayName && speaker.user.name && (
+                      <span className="text-xs text-muted ml-1">({speaker.user.name})</span>
+                    )}
                   </div>
                   <div className="text-xs text-muted">
                     {speaker.listeners} listening
@@ -165,19 +178,18 @@ export function SpeakerPanel({ matchId, langCode }: SpeakerPanelProps) {
               </div>
             </div>
 
-            <div className="mb-3">
-              <audio controls className="w-full h-9 accent-accent" style={{ borderRadius: 4 }}>
-                <source src={streamUrl} type="audio/mpeg" />
-              </audio>
-            </div>
+            <DelayedAudioPlayer src={streamUrl} />
 
             <div className="text-[10px] text-muted mb-2">
               MP3 · 64 kbps · Mono · 44.1 kHz
             </div>
+            <p className="text-[10px] text-muted mb-2">
+              Use + buttons to delay audio for sync with TV. VLC users can use built-in delay (J/K shortcuts).
+            </p>
 
             <div className="flex items-center gap-2">
-              <a
-                href={`data:audio/x-mpegurl,${encodeURIComponent(generateM3U(speaker.user.name || 'Ertemol', streamUrl))}`}
+               <a
+                href={`data:audio/x-mpegurl,${encodeURIComponent(generateM3U(speaker.user.displayName || speaker.user.name, streamUrl))}`}
                 download={`ertemol_${speaker.id}.m3u`}
                 className="h-[28px] px-2.5 inline-flex items-center text-[11px] font-medium border border-border bg-white text-fg hover:bg-bg transition-colors"
                 style={{ borderRadius: 4 }}

@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const stream = await prisma.stream.findUnique({
+    where: { id: params.id },
+    select: {
+      listeners: true,
+      score: true,
+    },
+  })
+
+  if (!stream) {
+    return NextResponse.json({ error: 'Stream not found' }, { status: 404 })
+  }
+
+  return NextResponse.json(stream)
+}
+
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } }
